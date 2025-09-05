@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import dev.davidv.translator.AggregatedWord
 import dev.davidv.translator.DownloadEvent
 import dev.davidv.translator.DownloadService
 import dev.davidv.translator.FilePathManager
@@ -51,6 +52,7 @@ import dev.davidv.translator.LanguageManagerScreen
 import dev.davidv.translator.LanguageStateManager
 import dev.davidv.translator.LaunchMode
 import dev.davidv.translator.SettingsManager
+import dev.davidv.translator.TarkkaBinding
 import dev.davidv.translator.TranslatedText
 import dev.davidv.translator.TranslationCoordinator
 import dev.davidv.translator.TranslationResult
@@ -72,6 +74,10 @@ fun TranslatorApp(
   val navController = rememberNavController()
   val scope = rememberCoroutineScope()
 
+  val tb = TarkkaBinding()
+  val r = tb.open("/sdcard/en-dictionary.dict")
+
+  var dictionaryWord by remember { mutableStateOf<AggregatedWord?>(null) }
   val settings by settingsManager.settings.collectAsState()
   val downloadService by downloadServiceState.collectAsState()
   val languageStateManager =
@@ -290,6 +296,11 @@ fun TranslatorApp(
       is TranslatorMessage.ImageTextDetected -> {
         input = message.extractedText
       }
+
+      is TranslatorMessage.DictionaryLookup -> {
+        dictionaryWord = tb.lookup(message.str)
+        Log.d("DictionaryLookup", "From lookup got $dictionaryWord")
+      }
     }
   }
 
@@ -425,6 +436,7 @@ fun TranslatorApp(
             displayImage = displayImage,
             isTranslating = translationCoordinator.isTranslating,
             isOcrInProgress = translationCoordinator.isOcrInProgress,
+            dictionaryWord = dictionaryWord,
             // Action requests
             onMessage = handleMessage,
             // System integration

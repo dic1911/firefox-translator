@@ -48,4 +48,9 @@ sealed class TranslatorMessage {
   data class ImageTextDetected(
     val extractedText: String,
   ) : TranslatorMessage()
+
+  data class DictionaryLookup(
+    val str: String,
+    val from: Language,
+  ) : TranslatorMessage()
 }

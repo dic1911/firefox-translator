@@ -24,3 +24,9 @@
 -keep class dev.davidv.bergamot.DetectionResult { *; }
 #-keep class dev.davidv.bergamot.LangDetect { *; }
 #-keep class dev.davidv.bergamot.NativeLib { *; }
+
+# Keep Tarkka native library integration
+-keep class dev.davidv.translator.TarkkaBinding { *; }
+-keepclasseswithmembernames class * {
+    native <methods>;
+}

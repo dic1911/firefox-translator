@@ -60,6 +60,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toBitmap
+import dev.davidv.translator.AggregatedWord
 import dev.davidv.translator.AppSettings
 import dev.davidv.translator.DownloadState
 import dev.davidv.translator.Language
@@ -68,6 +69,7 @@ import dev.davidv.translator.R
 import dev.davidv.translator.TranslatedText
 import dev.davidv.translator.TranslatorMessage
 import dev.davidv.translator.ui.components.DetectedLanguageSection
+import dev.davidv.translator.ui.components.DictionaryBottomSheet
 import dev.davidv.translator.ui.components.ImageCaptureHandler
 import dev.davidv.translator.ui.components.ImageDisplaySection
 import dev.davidv.translator.ui.components.LanguageSelectionRow
@@ -92,16 +94,18 @@ fun MainScreen(
   displayImage: Bitmap?,
   isTranslating: StateFlow<Boolean>,
   isOcrInProgress: StateFlow<Boolean>,
-  launchMode: LaunchMode,
+  dictionaryWord: AggregatedWord?,
   // Action requests
   onMessage: (TranslatorMessage) -> Unit,
   // System integration
   availableLanguages: Map<String, Boolean>,
   downloadStates: Map<Language, DownloadState> = emptyMap(),
   settings: AppSettings,
+  launchMode: LaunchMode,
 ) {
   var showFullScreenImage by remember { mutableStateOf(false) }
   var showImageSourceSheet by remember { mutableStateOf(false) }
+  var showDictionarySheet by remember(dictionaryWord) { mutableStateOf(dictionaryWord != null) }
   val translating by isTranslating.collectAsState()
   val extraTopPadding = if (launchMode == LaunchMode.Normal) 0.dp else 8.dp
 
@@ -268,6 +272,9 @@ fun MainScreen(
                       fontSize = (MaterialTheme.typography.bodyLarge.fontSize * settings.fontFactor),
                       lineHeight = (MaterialTheme.typography.bodyLarge.lineHeight * settings.fontFactor),
                     ),
+                  onDictionaryLookup = {
+                    onMessage(TranslatorMessage.DictionaryLookup(it, to))
+                  },
                 )
               }
             }
@@ -289,6 +296,14 @@ fun MainScreen(
     ZoomableImageViewer(
       bitmap = displayImage,
       onDismiss = { showFullScreenImage = false },
+    )
+  }
+
+  // Dictionary bottom sheet
+  if (showDictionarySheet && dictionaryWord != null) {
+    DictionaryBottomSheet(
+      dictionaryWord = dictionaryWord,
+      onDismiss = { showDictionarySheet = false },
     )
   }
 }
@@ -352,6 +367,7 @@ fun PopupMode() {
       displayImage = null,
       isTranslating = MutableStateFlow(false).asStateFlow(),
       isOcrInProgress = MutableStateFlow(false).asStateFlow(),
+      launchMode = LaunchMode.ReadWriteModal {},
       onMessage = {},
       availableLanguages =
         mapOf(
@@ -361,7 +377,7 @@ fun PopupMode() {
         ),
       downloadStates = emptyMap(),
       settings = AppSettings(),
-      launchMode = LaunchMode.ReadWriteModal {},
+      dictionaryWord = null,
     )
   }
 }
@@ -383,6 +399,7 @@ fun MainScreenPreview() {
       displayImage = null,
       isTranslating = MutableStateFlow(false).asStateFlow(),
       isOcrInProgress = MutableStateFlow(false).asStateFlow(),
+      launchMode = LaunchMode.Normal,
       onMessage = {},
       availableLanguages =
         mapOf(
@@ -392,7 +409,7 @@ fun MainScreenPreview() {
         ),
       downloadStates = emptyMap(),
       settings = AppSettings(),
-      launchMode = LaunchMode.Normal,
+      dictionaryWord = null,
     )
   }
 }
@@ -419,6 +436,7 @@ fun PreviewVeryLongText() {
       displayImage = null,
       isTranslating = MutableStateFlow(false).asStateFlow(),
       isOcrInProgress = MutableStateFlow(false).asStateFlow(),
+      launchMode = LaunchMode.Normal,
       onMessage = {},
       availableLanguages =
         mapOf(
@@ -428,7 +446,7 @@ fun PreviewVeryLongText() {
         ),
       downloadStates = emptyMap(),
       settings = AppSettings(),
-      launchMode = LaunchMode.Normal,
+      dictionaryWord = null,
     )
   }
 }
@@ -459,6 +477,7 @@ fun PreviewVeryLongTextImage() {
       displayImage = bitmap,
       isTranslating = MutableStateFlow(false).asStateFlow(),
       isOcrInProgress = MutableStateFlow(false).asStateFlow(),
+      launchMode = LaunchMode.Normal,
       onMessage = {},
       availableLanguages =
         mapOf(
@@ -468,7 +487,7 @@ fun PreviewVeryLongTextImage() {
         ),
       downloadStates = emptyMap(),
       settings = AppSettings(),
-      launchMode = LaunchMode.Normal,
+      dictionaryWord = null,
     )
   }
 }
