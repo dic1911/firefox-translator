@@ -61,6 +61,14 @@ import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
+fun toggleFirstLetterCase(word: String): String {
+  if (word.isEmpty()) return word
+
+  val first = word.first()
+  val toggled = if (first.isUpperCase()) first.lowercaseChar() else first.uppercaseChar()
+  return toggled + word.drop(1)
+}
+
 @Composable
 fun TranslatorApp(
   initialText: String,
@@ -298,7 +306,18 @@ fun TranslatorApp(
       }
 
       is TranslatorMessage.DictionaryLookup -> {
-        dictionaryWord = tb.lookup(message.str)
+        var res = tb.lookup(message.str)
+        // Try both capitalizations if not found -- sometimes capitalization is
+        // important, so, if there's a hit, return that
+        // basic case is 'monday' (no result) -> 'Monday'
+        //
+        dictionaryWord =
+          if (res == null) {
+            val toggledWord = toggleFirstLetterCase(message.str)
+            tb.lookup(toggledWord)
+          } else {
+            res
+          }
         Log.d("DictionaryLookup", "From lookup got $dictionaryWord")
       }
     }
