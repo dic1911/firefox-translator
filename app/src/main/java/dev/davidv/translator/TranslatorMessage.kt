@@ -53,4 +53,13 @@ sealed class TranslatorMessage {
     val str: String,
     val from: Language,
   ) : TranslatorMessage()
+
+  data class PushDictionary(
+    val word: String,
+    val language: Language,
+  ) : TranslatorMessage()
+
+  data object PopDictionary : TranslatorMessage()
+
+  data object ClearDictionaryStack : TranslatorMessage()
 }

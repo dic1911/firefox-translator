@@ -19,6 +19,7 @@ package dev.davidv.translator.ui.screens
 
 import android.content.res.Configuration
 import android.graphics.Bitmap
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -95,6 +96,7 @@ fun MainScreen(
   isTranslating: StateFlow<Boolean>,
   isOcrInProgress: StateFlow<Boolean>,
   dictionaryWord: AggregatedWord?,
+  dictionaryStack: List<AggregatedWord>,
   // Action requests
   onMessage: (TranslatorMessage) -> Unit,
   // System integration
@@ -108,6 +110,12 @@ fun MainScreen(
   var showDictionarySheet by remember(dictionaryWord) { mutableStateOf(dictionaryWord != null) }
   val translating by isTranslating.collectAsState()
   val extraTopPadding = if (launchMode == LaunchMode.Normal) 0.dp else 8.dp
+
+  // Handle back button when dictionary is open
+  BackHandler(enabled = showDictionarySheet) {
+    showDictionarySheet = false
+    onMessage(TranslatorMessage.ClearDictionaryStack)
+  }
 
   Scaffold(
     floatingActionButton = {
@@ -303,7 +311,17 @@ fun MainScreen(
   if (showDictionarySheet && dictionaryWord != null) {
     DictionaryBottomSheet(
       dictionaryWord = dictionaryWord,
-      onDismiss = { showDictionarySheet = false },
+      dictionaryStack = dictionaryStack,
+      onDismiss = {
+        showDictionarySheet = false
+        onMessage(TranslatorMessage.ClearDictionaryStack)
+      },
+      onDictionaryLookup = { word ->
+        onMessage(TranslatorMessage.PushDictionary(word, to))
+      },
+      onBackPressed = {
+        onMessage(TranslatorMessage.PopDictionary)
+      },
     )
   }
 }
@@ -378,6 +396,7 @@ fun PopupMode() {
       downloadStates = emptyMap(),
       settings = AppSettings(),
       dictionaryWord = null,
+      dictionaryStack = emptyList(),
     )
   }
 }
@@ -410,6 +429,7 @@ fun MainScreenPreview() {
       downloadStates = emptyMap(),
       settings = AppSettings(),
       dictionaryWord = null,
+      dictionaryStack = emptyList(),
     )
   }
 }
@@ -447,6 +467,7 @@ fun PreviewVeryLongText() {
       downloadStates = emptyMap(),
       settings = AppSettings(),
       dictionaryWord = null,
+      dictionaryStack = emptyList(),
     )
   }
 }
@@ -488,6 +509,7 @@ fun PreviewVeryLongTextImage() {
       downloadStates = emptyMap(),
       settings = AppSettings(),
       dictionaryWord = null,
+      dictionaryStack = emptyList(),
     )
   }
 }

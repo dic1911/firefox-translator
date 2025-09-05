@@ -86,6 +86,7 @@ fun TranslatorApp(
   val r = tb.open("/sdcard/en-dictionary.dict")
 
   var dictionaryWord by remember { mutableStateOf<AggregatedWord?>(null) }
+  var dictionaryStack by remember { mutableStateOf<List<AggregatedWord>>(emptyList()) }
   val settings by settingsManager.settings.collectAsState()
   val downloadService by downloadServiceState.collectAsState()
   val languageStateManager =
@@ -311,14 +312,54 @@ fun TranslatorApp(
         // important, so, if there's a hit, return that
         // basic case is 'monday' (no result) -> 'Monday'
         //
-        dictionaryWord =
+        val foundWord =
           if (res == null) {
             val toggledWord = toggleFirstLetterCase(message.str)
             tb.lookup(toggledWord)
           } else {
             res
           }
-        Log.d("DictionaryLookup", "From lookup got $dictionaryWord")
+
+        foundWord?.let {
+          dictionaryWord = it
+          dictionaryStack = listOf(it)
+        }
+        Log.d("DictionaryLookup", "From lookup got $foundWord")
+      }
+
+      is TranslatorMessage.PushDictionary -> {
+        var res = tb.lookup(message.word)
+        // Try both capitalizations if not found
+        val foundWord =
+          if (res == null) {
+            val toggledWord = toggleFirstLetterCase(message.word)
+            tb.lookup(toggledWord)
+          } else {
+            res
+          }
+
+        foundWord?.let {
+          dictionaryWord = it
+          dictionaryStack = dictionaryStack + it
+        }
+        Log.d("PushDictionary", "Pushed $foundWord, stack size: ${dictionaryStack.size}")
+      }
+
+      is TranslatorMessage.PopDictionary -> {
+        if (dictionaryStack.size > 1) {
+          dictionaryStack = dictionaryStack.dropLast(1)
+          dictionaryWord = dictionaryStack.lastOrNull()
+        } else {
+          dictionaryStack = emptyList()
+          dictionaryWord = null
+        }
+        Log.d("PopDictionary", "Popped dictionary, stack size: ${dictionaryStack.size}")
+      }
+
+      TranslatorMessage.ClearDictionaryStack -> {
+        dictionaryStack = emptyList()
+        dictionaryWord = null
+        Log.d("ClearDictionaryStack", "Cleared dictionary stack")
       }
     }
   }
@@ -456,6 +497,7 @@ fun TranslatorApp(
             isTranslating = translationCoordinator.isTranslating,
             isOcrInProgress = translationCoordinator.isOcrInProgress,
             dictionaryWord = dictionaryWord,
+            dictionaryStack = dictionaryStack,
             // Action requests
             onMessage = handleMessage,
             // System integration

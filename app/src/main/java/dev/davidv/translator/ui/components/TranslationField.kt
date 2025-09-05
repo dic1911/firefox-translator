@@ -21,10 +21,6 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.res.Configuration
-import android.util.Log
-import android.view.ActionMode
-import android.view.Menu
-import android.view.MenuItem
 import android.widget.TextView
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -51,66 +47,6 @@ import androidx.compose.ui.viewinterop.AndroidView
 import dev.davidv.translator.R
 import dev.davidv.translator.TranslatedText
 import dev.davidv.translator.ui.theme.TranslatorTheme
-
-class DictionaryActionModeCallback(
-  private val onDictionaryLookup: (String) -> Unit,
-) : ActionMode.Callback2() {
-  private var currentTextView: TextView? = null
-
-  fun setTextView(textView: TextView) {
-    currentTextView = textView
-  }
-
-  override fun onCreateActionMode(
-    mode: ActionMode?,
-    menu: Menu?,
-  ): Boolean {
-    menu?.add(0, DICTIONARY_ID, 0, "Dictionary")
-    return true
-  }
-
-  override fun onPrepareActionMode(
-    mode: ActionMode?,
-    menu: Menu?,
-  ): Boolean = false
-
-  override fun onActionItemClicked(
-    mode: ActionMode?,
-    item: MenuItem?,
-  ): Boolean =
-    when (item?.itemId) {
-      DICTIONARY_ID -> {
-        val textView = currentTextView
-        val selectedText =
-          textView
-            ?.text
-            ?.subSequence(
-              textView.selectionStart,
-              textView.selectionEnd,
-            )?.toString() ?: ""
-
-        Log.i("CustomActionMenu", "TextView: $textView")
-        Log.i("CustomActionMenu", "Selection: ${textView?.selectionStart}-${textView?.selectionEnd}")
-        Log.i("CustomActionMenu", "Selected text: '$selectedText'")
-
-        if (selectedText.isNotBlank()) {
-          onDictionaryLookup(selectedText)
-        }
-
-        mode?.finish()
-        true
-      }
-
-      else -> false
-    }
-
-  override fun onDestroyActionMode(mode: ActionMode?) {
-  }
-
-  companion object {
-    private const val DICTIONARY_ID = 12345
-  }
-}
 
 @Composable
 fun TranslationField(
