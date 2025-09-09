@@ -190,7 +190,7 @@ fun DictionaryEntry(
     modifier =
       Modifier
         .fillMaxWidth()
-        .padding(16.dp)
+        .padding(vertical = 16.dp, horizontal = 8.dp)
         .verticalScroll(rememberScrollState()),
   ) {
     Box(
@@ -326,7 +326,6 @@ fun WordEntryDisplay(
       }
     }
   }
-  Spacer(modifier = Modifier.height(16.dp))
 }
 
 @Preview(showBackground = true)
