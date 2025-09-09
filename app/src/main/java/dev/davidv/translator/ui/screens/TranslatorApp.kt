@@ -20,6 +20,7 @@ package dev.davidv.translator.ui.screens
 import android.graphics.Bitmap
 import android.net.Uri
 import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -37,6 +38,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -81,6 +83,7 @@ fun TranslatorApp(
 ) {
   val navController = rememberNavController()
   val scope = rememberCoroutineScope()
+  val context = LocalContext.current
 
   val tb = TarkkaBinding()
   val r = tb.open("/sdcard/es-multi-dictionary.dict")
@@ -320,9 +323,11 @@ fun TranslatorApp(
             res
           }
 
-        foundWord?.let {
-          dictionaryWord = it
-          dictionaryStack = listOf(it)
+        if (foundWord != null) {
+          dictionaryWord = foundWord
+          dictionaryStack = listOf(foundWord)
+        } else {
+          Toast.makeText(context, "'${message.str}' not found in dictionary", Toast.LENGTH_SHORT).show()
         }
         Log.d("DictionaryLookup", "From lookup got $foundWord")
       }
@@ -338,9 +343,11 @@ fun TranslatorApp(
             res
           }
 
-        foundWord?.let {
-          dictionaryWord = it
-          dictionaryStack = dictionaryStack + it
+        if (foundWord != null) {
+          dictionaryWord = foundWord
+          dictionaryStack = dictionaryStack + foundWord
+        } else {
+          Toast.makeText(context, "Word '${message.word}' not found in dictionary", Toast.LENGTH_SHORT).show()
         }
         Log.d("PushDictionary", "Pushed $foundWord, stack size: ${dictionaryStack.size}")
       }
