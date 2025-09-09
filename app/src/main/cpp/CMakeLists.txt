@@ -27,17 +27,17 @@ set(TARKKA_LIB_PATH "${RUST_LIB_DIR}/libtarkka.so")
 # Build the Rust library directly as an Android shared library
 add_custom_command(
     OUTPUT ${TARKKA_LIB_PATH}
-    COMMAND cd ${TARKKA_ROOT_DIR} && 
-            CC=${ANDROID_VERSIONED_CLANG} 
+    COMMAND cd ${TARKKA_ROOT_DIR} &&
+            CC=${ANDROID_VERSIONED_CLANG}
             CARGO_TARGET_${RUST_TARGET_UPPER}_LINKER=${ANDROID_VERSIONED_CLANG}
             cargo build --release --target ${RUST_TARGET}
-    DEPENDS ${TARKKA_ROOT_DIR}/src/lib.rs ${TARKKA_ROOT_DIR}/Cargo.toml
+    DEPENDS ${TARKKA_ROOT_DIR}/src/android.rs ${TARKKA_ROOT_DIR}/src/de.rs ${TARKKA_ROOT_DIR}/src/reader.rs ${TARKKA_ROOT_DIR}/src/lib.rs ${TARKKA_ROOT_DIR}/Cargo.toml
     COMMENT "Building Rust library for ${RUST_TARGET}"
 )
 
 # Add custom target to build the Rust library and ensure it's included
 add_custom_target(build_tarkka ALL DEPENDS ${TARKKA_LIB_PATH}
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different 
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
         ${TARKKA_LIB_PATH}
         ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/libtarkka.so
     COMMENT "Copying tarkka library to output directory"

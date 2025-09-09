@@ -15,13 +15,12 @@ class TarkkaBinding {
     return readerPtr != 0L
   }
 
-  fun lookup(word: String): AggregatedWord? {
-    return if (readerPtr != 0L) {
+  fun lookup(word: String): WordWithTaggedEntries? =
+    if (readerPtr != 0L) {
       nativeLookup(readerPtr, word)
     } else {
       null
     }
-  }
 
   fun close() {
     if (readerPtr != 0L) {
@@ -37,7 +36,7 @@ class TarkkaBinding {
   private external fun nativeLookup(
     readerPtr: Long,
     word: String,
-  ): AggregatedWord?
+  ): WordWithTaggedEntries?
 
   private external fun nativeClose(readerPtr: Long)
 

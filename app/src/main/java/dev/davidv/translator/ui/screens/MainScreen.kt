@@ -61,7 +61,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toBitmap
-import dev.davidv.translator.AggregatedWord
 import dev.davidv.translator.AppSettings
 import dev.davidv.translator.DownloadState
 import dev.davidv.translator.Language
@@ -69,6 +68,7 @@ import dev.davidv.translator.LaunchMode
 import dev.davidv.translator.R
 import dev.davidv.translator.TranslatedText
 import dev.davidv.translator.TranslatorMessage
+import dev.davidv.translator.WordWithTaggedEntries
 import dev.davidv.translator.ui.components.DetectedLanguageSection
 import dev.davidv.translator.ui.components.DictionaryBottomSheet
 import dev.davidv.translator.ui.components.ImageCaptureHandler
@@ -95,8 +95,8 @@ fun MainScreen(
   displayImage: Bitmap?,
   isTranslating: StateFlow<Boolean>,
   isOcrInProgress: StateFlow<Boolean>,
-  dictionaryWord: AggregatedWord?,
-  dictionaryStack: List<AggregatedWord>,
+  dictionaryWord: WordWithTaggedEntries?,
+  dictionaryStack: List<WordWithTaggedEntries>,
   // Action requests
   onMessage: (TranslatorMessage) -> Unit,
   // System integration
@@ -312,6 +312,7 @@ fun MainScreen(
     DictionaryBottomSheet(
       dictionaryWord = dictionaryWord,
       dictionaryStack = dictionaryStack,
+      toLanguage = to,
       onDismiss = {
         showDictionarySheet = false
         onMessage(TranslatorMessage.ClearDictionaryStack)

@@ -62,21 +62,25 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import dev.davidv.translator.AggregatedWord
 import dev.davidv.translator.Gloss
-import dev.davidv.translator.PosGlosses
+import dev.davidv.translator.Language
 import dev.davidv.translator.R
+import dev.davidv.translator.Sense
+import dev.davidv.translator.WordEntryComplete
+import dev.davidv.translator.WordWithTaggedEntries
 
 @Composable
 fun DictionaryBottomSheet(
-  dictionaryWord: AggregatedWord,
-  dictionaryStack: List<AggregatedWord>,
+  dictionaryWord: WordWithTaggedEntries,
+  dictionaryStack: List<WordWithTaggedEntries>,
+  toLanguage: Language,
   onDismiss: () -> Unit,
   onDictionaryLookup: (String) -> Unit = {},
   onBackPressed: () -> Unit = {},
 ) {
   var isVisible by remember { mutableStateOf(false) }
   var isDismissing by remember { mutableStateOf(false) }
+  var selectedEntryIndex by remember(dictionaryWord) { mutableStateOf(0) }
 
   LaunchedEffect(Unit) {
     isVisible = true
@@ -137,7 +141,7 @@ fun DictionaryBottomSheet(
           modifier = Modifier.fillMaxWidth(),
         ) {
           AnimatedContent(
-            targetState = dictionaryWord,
+            targetState = Pair(dictionaryWord, selectedEntryIndex),
             transitionSpec = {
               fadeIn(
                 animationSpec = tween(150),
@@ -148,9 +152,12 @@ fun DictionaryBottomSheet(
             },
             label = "dictionary_content",
             modifier = Modifier.fillMaxWidth(),
-          ) { currentWord ->
+          ) { (currentWord, entryIndex) ->
             DictionaryEntry(
               dictionaryWord = currentWord,
+              toLanguage = toLanguage,
+              selectedEntryIndex = entryIndex,
+              onEntryIndexChanged = { selectedEntryIndex = it },
               showBackButton = dictionaryStack.size > 1,
               onDictionaryLookup = onDictionaryLookup,
               onBackPressed = handleBackPressed,
@@ -171,7 +178,10 @@ fun DictionaryBottomSheet(
 
 @Composable
 fun DictionaryEntry(
-  dictionaryWord: AggregatedWord,
+  dictionaryWord: WordWithTaggedEntries,
+  toLanguage: Language,
+  selectedEntryIndex: Int,
+  onEntryIndexChanged: (Int) -> Unit,
   showBackButton: Boolean = false,
   onDictionaryLookup: (String) -> Unit = {},
   onBackPressed: () -> Unit = {},
@@ -186,8 +196,7 @@ fun DictionaryEntry(
     Box(
       modifier =
         Modifier
-          .fillMaxWidth()
-          .padding(bottom = 8.dp),
+          .fillMaxWidth(),
     ) {
       if (showBackButton) {
         IconButton(
@@ -205,18 +214,55 @@ fun DictionaryEntry(
         }
       }
 
-      Text(
-        dictionaryWord.word,
-        style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+      Row(
         modifier =
           Modifier
-            .align(Alignment.CenterStart)
-            .padding(horizontal = if (showBackButton) 32.dp else 0.dp),
-      )
+            .padding(start = if (showBackButton) 32.dp else 0.dp),
+      ) {
+        Text(
+          dictionaryWord.word,
+          style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+        )
+
+        Spacer(Modifier.weight(1f))
+        if (dictionaryWord.wordTag == WordWithTaggedEntries.WordTag.BOTH) {
+          Row(
+            modifier = Modifier.alignByBaseline(),
+          ) {
+            Text(
+              toLanguage.code,
+              style =
+                MaterialTheme.typography.titleMedium.copy(
+                  fontWeight = if (selectedEntryIndex == 0) FontWeight.Bold else FontWeight.Normal,
+                ),
+              modifier =
+                Modifier
+                  .padding(4.dp)
+                  .clickable { onEntryIndexChanged(0) },
+            )
+            Text(
+              "|",
+              style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Normal),
+              modifier = Modifier.padding(4.dp),
+            )
+            Text(
+              "en",
+              style =
+                MaterialTheme.typography.titleMedium.copy(
+                  fontWeight = if (selectedEntryIndex == 1) FontWeight.Bold else FontWeight.Normal,
+                ),
+              modifier =
+                Modifier
+                  .padding(4.dp)
+                  .clickable { onEntryIndexChanged(1) },
+            )
+          }
+        }
+      }
     }
 
-    val ipa = dictionaryWord.ipaSound?.firstOrNull()
-    val hyphenation = dictionaryWord.hyphenation?.joinToString("-")
+    val ipa = dictionaryWord.sounds?.replace('[', '/')?.replace(']', '/')
+    val hyphenation = dictionaryWord.hyphenations.takeIf { it.isNotEmpty() }?.joinToString("‧")
 
     Row {
       if (!ipa.isNullOrEmpty()) {
@@ -235,106 +281,131 @@ fun DictionaryEntry(
       }
     }
 
-    var lastCategoryPath = emptyList<String>()
+    val selectedEntry =
+      if (dictionaryWord.tag == 3 && dictionaryWord.entries.size > selectedEntryIndex) {
+        dictionaryWord.entries[selectedEntryIndex]
+      } else {
+        dictionaryWord.entries.firstOrNull()
+      }
 
-    dictionaryWord.posGlosses.forEach { posGlosses ->
+    if (selectedEntry != null) {
+      WordEntryDisplay(
+        entry = selectedEntry,
+        onDictionaryLookup = onDictionaryLookup,
+      )
+    }
+  }
+}
+
+@Composable
+fun WordEntryDisplay(
+  entry: WordEntryComplete,
+  onDictionaryLookup: (String) -> Unit = {},
+) {
+  var lastPos: String? = null
+  entry.senses?.forEach { sense ->
+    if (lastPos != sense.pos) {
       Row {
         Text(
-          text = "${posGlosses.pos}",
+          text = sense.pos,
           style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-          modifier = Modifier.padding(bottom = 0.dp, top = 0.dp),
-        )
-        Text(
-          text = "category",
-          style = MaterialTheme.typography.labelSmall,
-          modifier = Modifier.align(Alignment.CenterVertically).padding(start = 8.dp),
+          modifier = Modifier.padding(bottom = 4.dp, top = 4.dp),
         )
       }
-
-      posGlosses.glosses.forEach { gloss ->
-        val currentCategoryPath = gloss.getCategoryPath(lastCategoryPath)
-
-        val commonLen =
-          lastCategoryPath
-            .zip(currentCategoryPath)
-            .takeWhile { (a, b) -> a == b }
-            .size
-
-        val glossIndent = (currentCategoryPath.size + 1) * 2
-        currentCategoryPath.drop(commonLen).forEachIndexed { index, category ->
-          InteractiveText(
-            text = "› $category",
-            style = MaterialTheme.typography.bodyMedium,
-            onDictionaryLookup = onDictionaryLookup,
-            modifier = Modifier.padding(start = (glossIndent * 2).dp, bottom = 2.dp),
-          )
-        }
-
-        InteractiveText(
-          text = "• ${gloss.gloss.removeSuffix(".")}",
-          style = MaterialTheme.typography.bodyMedium,
-          onDictionaryLookup = onDictionaryLookup,
-          modifier = Modifier.padding(start = (glossIndent * 4).dp, bottom = 2.dp),
-        )
-
-        lastCategoryPath = currentCategoryPath
-      }
+      lastPos = sense.pos
     }
 
-    Spacer(modifier = Modifier.height(16.dp))
+    sense.glosses.forEach { gloss ->
+      gloss.glossLines.forEach { line ->
+        InteractiveText(
+          text = "• ${line.removeSuffix(".")}",
+          style = MaterialTheme.typography.bodyMedium,
+          onDictionaryLookup = onDictionaryLookup,
+          modifier = Modifier.padding(start = 16.dp, bottom = 2.dp),
+        )
+      }
+    }
   }
+  Spacer(modifier = Modifier.height(16.dp))
 }
 
 @Preview(showBackground = true)
 @Composable
 fun DictionaryBottomSheetPreview() {
-  val sampleWord =
-    AggregatedWord(
-      word = "dictionary",
-      posGlosses =
-        listOf(
-          PosGlosses(
-            pos = "noun",
-            glosses =
+  // Spanish (monolingual) senses
+  val spanishSenses =
+    listOf(
+      Sense(
+        pos = "sustantivo masculino",
+        glosses =
+          listOf(
+            Gloss(listOf("libro de consulta que contiene palabras ordenadas alfabéticamente con sus definiciones")),
+            Gloss(listOf("obra que recopila y explica de forma ordenada voces de una o más lenguas")),
+            Gloss(
               listOf(
-                Gloss(
-                  sharedPrefixCount = 0,
-                  gloss = "A reference book containing an alphabetical list of words with information about their meanings, pronunciations, etymologies, etc.",
-                  newCategories = emptyList(),
-                ),
-                Gloss(
-                  sharedPrefixCount = 1,
-                  gloss = "A book of words in one language with their equivalents in another language",
-                  newCategories = emptyList(),
-                ),
-                Gloss(
-                  sharedPrefixCount = 0,
-                  gloss = "A data structure that maps keys to values",
-                  newCategories = listOf("computing"),
-                ),
+                "repertorio en forma de libro donde se recogen, según un orden determinado, las palabras o expresiones de una o más lenguas",
               ),
+            ),
+            Gloss(listOf("catálogo de datos o noticias importantes de una materia determinada")),
           ),
-          PosGlosses(
-            pos = "verb",
-            glosses =
-              listOf(
-                Gloss(
-                  sharedPrefixCount = 0,
-                  gloss = "To compile a dictionary",
-                  newCategories = null,
-                ),
-              ),
+      ),
+      Sense(
+        pos = "verbo transitivo",
+        glosses = listOf(Gloss(listOf("compilar o registrar información de manera sistemática y ordenada"))),
+      ),
+    )
+
+  // English senses
+  val englishSenses =
+    listOf(
+      Sense(
+        pos = "noun",
+        glosses =
+          listOf(
+            Gloss(listOf("a reference book containing an alphabetical list of words with information about them")),
+            Gloss(listOf("a book that explains the words of a language and is arranged in alphabetical order")),
+            Gloss(listOf("a reference work that lists the words of a language typically in alphabetical order")),
+            Gloss(listOf("a book giving information on particular subjects or on a particular class of words")),
+          ),
+      ),
+      Sense(
+        pos = "verb",
+        glosses =
+          listOf(
+            Gloss(listOf("to compile a dictionary of")),
+            Gloss(listOf("to supply with a dictionary")),
+          ),
+      ),
+    )
+
+  val sampleWord =
+    WordWithTaggedEntries(
+      word = "dictionary",
+      // Both monolingual and English
+      tag = 3,
+      entries =
+        listOf(
+          // Spanish monolingual entry (first)
+          WordEntryComplete(
+            senses = spanishSenses,
+          ),
+          // English entry (second)
+          WordEntryComplete(
+            senses = englishSenses,
           ),
         ),
-      hyphenation = listOf("dic", "tion", "ar", "y"),
-      formOf = null,
-      ipaSound = listOf("/ˈdɪkʃəˌnɛri/", "/ˈdɪkʃənˌɛri/"),
+      sounds = "[dik.θjo.ˈna.ɾjo]",
+      hyphenations = listOf("dic", "cio", "na", "rio"),
     )
 
   MaterialTheme {
     Surface {
       DictionaryEntry(
         dictionaryWord = sampleWord,
+        toLanguage = Language.SPANISH,
+        selectedEntryIndex = 0,
+        onEntryIndexChanged = {},
+        showBackButton = true,
       )
     }
   }

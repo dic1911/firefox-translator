@@ -41,7 +41,6 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import dev.davidv.translator.AggregatedWord
 import dev.davidv.translator.DownloadEvent
 import dev.davidv.translator.DownloadService
 import dev.davidv.translator.FilePathManager
@@ -57,6 +56,7 @@ import dev.davidv.translator.TranslatedText
 import dev.davidv.translator.TranslationCoordinator
 import dev.davidv.translator.TranslationResult
 import dev.davidv.translator.TranslatorMessage
+import dev.davidv.translator.WordWithTaggedEntries
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -83,10 +83,10 @@ fun TranslatorApp(
   val scope = rememberCoroutineScope()
 
   val tb = TarkkaBinding()
-  val r = tb.open("/sdcard/en-dictionary.dict")
+  val r = tb.open("/sdcard/es-multi-dictionary.dict")
 
-  var dictionaryWord by remember { mutableStateOf<AggregatedWord?>(null) }
-  var dictionaryStack by remember { mutableStateOf<List<AggregatedWord>>(emptyList()) }
+  var dictionaryWord by remember { mutableStateOf<WordWithTaggedEntries?>(null) }
+  var dictionaryStack by remember { mutableStateOf<List<WordWithTaggedEntries>>(emptyList()) }
   val settings by settingsManager.settings.collectAsState()
   val downloadService by downloadServiceState.collectAsState()
   val languageStateManager =
