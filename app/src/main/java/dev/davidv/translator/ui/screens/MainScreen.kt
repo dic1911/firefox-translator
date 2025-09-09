@@ -107,13 +107,11 @@ fun MainScreen(
 ) {
   var showFullScreenImage by remember { mutableStateOf(false) }
   var showImageSourceSheet by remember { mutableStateOf(false) }
-  var showDictionarySheet by remember(dictionaryWord) { mutableStateOf(dictionaryWord != null) }
   val translating by isTranslating.collectAsState()
   val extraTopPadding = if (launchMode == LaunchMode.Normal) 0.dp else 8.dp
 
   // Handle back button when dictionary is open
-  BackHandler(enabled = showDictionarySheet) {
-    showDictionarySheet = false
+  BackHandler(enabled = dictionaryWord != null) {
     onMessage(TranslatorMessage.ClearDictionaryStack)
   }
 
@@ -308,13 +306,12 @@ fun MainScreen(
   }
 
   // Dictionary bottom sheet
-  if (showDictionarySheet && dictionaryWord != null) {
+  if (dictionaryWord != null) {
     DictionaryBottomSheet(
       dictionaryWord = dictionaryWord,
       dictionaryStack = dictionaryStack,
       toLanguage = to,
       onDismiss = {
-        showDictionarySheet = false
         onMessage(TranslatorMessage.ClearDictionaryStack)
       },
       onDictionaryLookup = { word ->

@@ -347,7 +347,7 @@ fun TranslatorApp(
           dictionaryWord = foundWord
           dictionaryStack = dictionaryStack + foundWord
         } else {
-          Toast.makeText(context, "Word '${message.word}' not found in dictionary", Toast.LENGTH_SHORT).show()
+          Toast.makeText(context, "'${message.word}' not found in dictionary", Toast.LENGTH_SHORT).show()
         }
         Log.d("PushDictionary", "Pushed $foundWord, stack size: ${dictionaryStack.size}")
       }
